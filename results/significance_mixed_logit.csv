@@ -1,0 +1,4 @@
+Metric,Mean(Mixed),Mean(Logit),MeanDiff(Logit-Mixed),Better,t_pval,wilcoxon_pval
+PRECISION,0.595556,0.424048,-0.171508,mixed > logit,0.993688,0.992079
+RECALL,0.304735,0.410529,0.105794,logit > mixed,0.009373,0.010216
+F1_SCORE,0.407626,0.410554,0.002928,logit > mixed,0.465286,0.486063

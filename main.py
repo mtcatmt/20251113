@@ -89,12 +89,17 @@ def compare_mixed_logit_significance(df: pd.DataFrame, output_dir: str):
 # ==========================================================
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_dir", type=str, default="results", help="出力ディレクトリ")
-    parser.add_argument("--workers", type=int, default=os.cpu_count(), help="並列実行数")
+    parser.add_argument("--output_dir", type=str, default="results")
+    parser.add_argument("--workers", type=int, default=os.cpu_count())
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(args.output_dir, f"main_log_{timestamp}.txt")
+
+    # ← これが無いとログが出ない
+    setup_logging(log_path)
 
     np.random.seed(GLOBAL_SEED)
     random.seed(GLOBAL_SEED)

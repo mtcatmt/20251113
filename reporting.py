@@ -125,7 +125,10 @@ def plot_results_boxplots(
             g.legend.remove()
         
         for ax in g.axes.flat:
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=15)
+            ticks = range(len(ax.get_xticklabels()))
+            ax.set_xticks(ticks)
+            ax.set_xticklabels([lbl.get_text() for lbl in ax.get_xticklabels()], rotation=15)
+
             ax.grid(True, linestyle='--', alpha=0.6)
 
         comb_box_path = os.path.join(output_dir, f"boxplot_combined_by_metric_{base_name}.png")

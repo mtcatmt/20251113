@@ -232,80 +232,73 @@ def create_dataset_iii_logistic(
             
     return data_ts_regressed
 
-# ---------------------------
-# データセット④ (Logit Score)
-# ---------------------------
-
 def create_dataset_iv_logit_score(
     data_ts_mixed: pd.DataFrame, 
-    B_true: np.ndarray, 
+    B_true: np.ndarray,                 # ※旧仕様との互換性のため残すが使わない
     base_names: List[str], 
     discrete_variable_names: List[str],
-    labels: List[str],
+    labels: List[str],                  # ※旧仕様との互換性のため残すが使わない
     lag: int
 ) -> pd.DataFrame:
     """
-    データセット② (混合) と正解グラフ (B_true) に基づき、
-    離散変数を「親」からのロジスティック回帰の「ロジットスコア (線形予測子)」に
-    置き換えたデータセット④ (Logit Score) を作成する。
-    
-    ※ データセット③ (predict_proba) とは異なり、decision_function を使用する。
+    Dataset④（Logit Score）.
+    ★新仕様★ B_true に依存せず、
+    「ラグのみ × 全変数 × 正則化ロジスティック × ロジットスコア」
+    で 2値変数を連続化する。
     """
-    
-    # 警告を抑制 (liblinear が収束しない場合があるため)
+
     warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-    data_ts_logit_score = data_ts_mixed.copy() # データセット④用のDataFrame
+    df = data_ts_mixed.copy()
+    data_ts_logit_score = df.copy()
     n_vars = len(base_names)
-    
-    # ラベル (e.g., "x1(t-1)") から (変数名, ラグ) を引く辞書
-    label_to_info = {}
-    for p in range(lag + 1):
-        for i, name in enumerate(base_names):
-            label = f"{name}(t-{p})" if p > 0 else f"{name}(t)"
-            label_to_info[label] = (name, p)
 
-    # B_true (n_nodes x n_nodes) から親ラベルを取得するためのmap
-    index_to_label = {i: lbl for i, lbl in enumerate(labels)}
+    # ------------------------------------------------------------
+    # ★ パターン①：ラグのみを特徴量として使用
+    # ------------------------------------------------------------
+    # 例: lag=1 → [x1(t-1), x2(t-1), ...]
+    feature_cols = []
+    for L in range(1, lag + 1):
+        for name in base_names:
+            col = f"{name}(t-{L})"
+            if col in df.columns:
+                feature_cols.append(col)
+            else:
+                # Mixed データにラグ列が存在しない場合は shift して作る
+                df[col] = df[name].shift(L).fillna(0)
+                feature_cols.append(col)
 
-    for discrete_name in discrete_variable_names:
-        
-        y_target = data_ts_logit_score[discrete_name]
-        target_base_idx = base_names.index(discrete_name)
-        parent_row = B_true[target_base_idx, :]
-        parent_indices_full = np.where(parent_row != 0)[0]
-        parent_labels = [index_to_label[i] for i in parent_indices_full]
+    # ------------------------------------------------------------
+    # モデル（L2正則化ロジスティック）
+    # ------------------------------------------------------------
+    model = LogisticRegression(
+        penalty="l2",
+        C=1.0,
+        solver="lbfgs",
+        max_iter=300,
+    )
 
-        X_features = pd.DataFrame(index=data_ts_mixed.index)
+    # ------------------------------------------------------------
+    # 各 2値変数に対して連続化
+    # ------------------------------------------------------------
+    for var in discrete_variable_names:
 
-        if not parent_labels:
-            logger.warning(f"[Dataset IV] '{discrete_name}' has no parents in B_true. Filling with 0.0.")
-            data_ts_logit_score[discrete_name] = np.random.normal(0, 1e-6, size=len(y_target))
+        y = df[var].values
+        X = df[feature_cols].values
+
+        # 単一クラス（全0/全1）なら fallback
+        if len(np.unique(y)) < 2:
+            data_ts_logit_score[var] = np.zeros(len(y))
             continue
-
-        # --- 単一クラスのチェックを追加 ---
-        if np.unique(y_target).size < 2:
-            single_val = np.unique(y_target)[0]
-            logger.warning(f"[Dataset IV] '{discrete_name}' has only one class ({single_val}). Filling with 0.0 + small noise.")
-            data_ts_logit_score[discrete_name] = np.random.normal(0, 1e-6, size=len(y_target))
-            continue
-            
-        for p_label in parent_labels:
-            p_name, p_lag = label_to_info[p_label]
-            X_features[p_label] = data_ts_mixed[p_name].shift(p_lag).fillna(0)
 
         try:
-            model = LogisticRegression(solver='liblinear', random_state=1)
-            model.fit(X_features, y_target)
-            
-            # --- ★★★ 変更点 ★★★ ---
-            # 確率 (proba) の代わりにロジットスコア (decision_function) を使用
-            y_pred_logit_score = model.decision_function(X_features)
-            data_ts_logit_score[discrete_name] = y_pred_logit_score
-            # --- ★★★★★★★★★★★ ---
-            
+            model.fit(X, y)
+            # ★ ロジットスコア（線形予測子）
+            eta = model.decision_function(X)
+            data_ts_logit_score[var] = eta
+
         except Exception as e:
-            logger.error(f"[Dataset IV] Logistic regression failed for '{discrete_name}': {e}")
-            logger.warning(f"[Dataset IV] Falling back to original mixed data for '{discrete_name}'")
-            
+            logger.error(f"[Dataset IV] Logistic regression failed for '{var}': {e}")
+            data_ts_logit_score[var] = np.zeros(len(y))
+
     return data_ts_logit_score
