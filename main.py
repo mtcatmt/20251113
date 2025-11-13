@@ -12,9 +12,10 @@ from scipy.stats import ttest_rel, wilcoxon
 
 from config import GLOBAL_SEED, SIMULATION_CONFIG
 from utils import setup_logging
-from simulation import run_parallel_simulations
+from simulation import run_parallel_simulations, generate_unified_sample_csv
 from reporting import generate_reports
 from slack_notifier import send_slack_message
+
 
 
 
@@ -196,3 +197,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+from config import SIMULATION_CONFIG
+generate_unified_sample_csv(SIMULATION_CONFIG, "sample_output")
+

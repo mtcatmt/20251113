@@ -232,73 +232,58 @@ def create_dataset_iii_logistic(
             
     return data_ts_regressed
 
-def create_dataset_iv_logit_score(
-    data_ts_mixed: pd.DataFrame, 
-    B_true: np.ndarray,                 # ※旧仕様との互換性のため残すが使わない
-    base_names: List[str], 
+def create_dataset_logit_lag_only(
+    data_ts_mixed: pd.DataFrame,
+    base_names: List[str],
     discrete_variable_names: List[str],
-    labels: List[str],                  # ※旧仕様との互換性のため残すが使わない
     lag: int
 ) -> pd.DataFrame:
-    """
-    Dataset④（Logit Score）.
-    ★新仕様★ B_true に依存せず、
-    「ラグのみ × 全変数 × 正則化ロジスティック × ロジットスコア」
-    で 2値変数を連続化する。
-    """
-
-    warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
     df = data_ts_mixed.copy()
-    data_ts_logit_score = df.copy()
     n_vars = len(base_names)
 
-    # ------------------------------------------------------------
-    # ★ パターン①：ラグのみを特徴量として使用
-    # ------------------------------------------------------------
-    # 例: lag=1 → [x1(t-1), x2(t-1), ...]
+    # ------------------------
+    # 1. ラグ特徴量の生成
+    # ------------------------
     feature_cols = []
     for L in range(1, lag + 1):
         for name in base_names:
             col = f"{name}(t-{L})"
-            if col in df.columns:
-                feature_cols.append(col)
-            else:
-                # Mixed データにラグ列が存在しない場合は shift して作る
-                df[col] = df[name].shift(L).fillna(0)
-                feature_cols.append(col)
+            df[col] = df[name].shift(L).fillna(0)
+            feature_cols.append(col)
 
-    # ------------------------------------------------------------
-    # モデル（L2正則化ロジスティック）
-    # ------------------------------------------------------------
+    # ------------------------
+    # 2. L2 ロジスティック回帰モデル
+    # ------------------------
     model = LogisticRegression(
         penalty="l2",
         C=1.0,
         solver="lbfgs",
-        max_iter=300,
+        max_iter=300
     )
 
-    # ------------------------------------------------------------
-    # 各 2値変数に対して連続化
-    # ------------------------------------------------------------
+    # ------------------------
+    # 3. 離散変数を連続化（ロジットスコア）
+    # ------------------------
+    df_out = df.copy()
+
     for var in discrete_variable_names:
 
         y = df[var].values
         X = df[feature_cols].values
 
-        # 単一クラス（全0/全1）なら fallback
+        # 単一クラスなら fallback
         if len(np.unique(y)) < 2:
-            data_ts_logit_score[var] = np.zeros(len(y))
+            df_out[var] = np.zeros(len(y)) + 0.5
             continue
 
         try:
             model.fit(X, y)
-            # ★ ロジットスコア（線形予測子）
-            eta = model.decision_function(X)
-            data_ts_logit_score[var] = eta
+            eta = model.decision_function(X)  # ロジットスコア
+            df_out[var] = eta
+        except Exception:
+            df_out[var] = np.zeros(len(y)) + 0.5
 
-        except Exception as e:
-            logger.error(f"[Dataset IV] Logistic regression failed for '{var}': {e}")
-            data_ts_logit_score[var] = np.zeros(len(y))
+    # 元のラグ列は drop して返す
+    return df_out[base_names]
 
-    return data_ts_logit_score

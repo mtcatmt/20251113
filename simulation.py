@@ -10,9 +10,62 @@ from concurrent.futures import TimeoutError as PebbleTimeoutError, as_completed
 from typing import List, Dict, Any, Tuple
 
 # ローカルモジュール
-from data_generator import generate_artificial_data, create_dataset_iv_logit_score
+from data_generator import generate_artificial_data, create_dataset_logit_lag_only
 from analysis import run_block_bootstrap_lingam
 from evaluation import evaluate_by_variable_type
+
+
+
+def generate_unified_sample_csv(config: dict, output_dir: str, filename: str = "unified_sample.csv"):
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # --- ①②の生成 ---
+    data_ts_cont, data_ts_mixed, B_true, base_names, lag, disc_names = generate_artificial_data(
+        n_vars=config["N_VARS"],
+        n_samples=config["N_SAMPLES"],
+        lag=config["LAG"],
+        seed=42,
+        edge_prob=config["EDGE_PROB"],
+        discrete_parent_mode="default"
+    )
+
+    # --- ④ LogitScore（ラグのみ × ロジット） ---
+    data_ts_logit = create_dataset_logit_lag_only(
+        data_ts_mixed=data_ts_mixed,
+        base_names=base_names,
+        discrete_variable_names=disc_names,
+        lag=lag
+    )
+
+    # --- 列名をわかりやすく付ける ---
+    df_cont = data_ts_cont.add_prefix("cont_")
+    df_mixed = data_ts_mixed.add_prefix("mixed_")
+    df_logit = data_ts_logit.add_prefix("logit_")
+
+    # --- 横結合 ---
+    df_all = pd.concat([df_cont, df_mixed, df_logit], axis=1)
+
+    # --- B_true を縦長（tidy）に変換して append ---
+    B_df = pd.DataFrame(B_true)
+    B_df.insert(0, "row_index", range(len(B_df)))
+    B_df["__type__"] = "B_true"
+
+    # 区切り行を入れる
+    sep_df = pd.DataFrame({"__separator__": ["--- B_true below this line ---"]})
+
+    # 保存のためひとつにまとめる
+    with open(os.path.join(output_dir, filename), "w", encoding="utf-8") as f:
+        df_all.to_csv(f, index=False)
+        f.write("\n")  # 空行
+        sep_df.to_csv(f, index=False)
+        f.write("\n")
+        B_df.to_csv(f, index=False)
+
+    print(f"\n===== unified sample CSV created =====")
+    print(f"→ {os.path.join(output_dir, filename)}")
+
+    return df_all, B_true
 
 
 # =========================================================
@@ -38,7 +91,7 @@ def run_single_simulation(sim_id: int, config: dict, sim_seed: int) -> Tuple[Lis
         n_results_max = 0
 
         # -----------------------------------------------------
-        # Dataset① Continuous
+        # Dataset1 Continuous
         # -----------------------------------------------------
         n_results_max += 1
         df_edge_cont, labels_cont = run_block_bootstrap_lingam(
@@ -66,7 +119,7 @@ def run_single_simulation(sim_id: int, config: dict, sim_seed: int) -> Tuple[Lis
             logging.warning(f"[Sim {sim_id}] Continuous → LiNGAM failed (empty result)")
 
         # -----------------------------------------------------
-        # Dataset② Mixed
+        # Dataset2 Mixed
         # -----------------------------------------------------
         n_results_max += 1
         df_edge_mixed, labels_mixed = run_block_bootstrap_lingam(
@@ -93,17 +146,15 @@ def run_single_simulation(sim_id: int, config: dict, sim_seed: int) -> Tuple[Lis
             logging.warning(f"[Sim {sim_id}] Mixed → LiNGAM failed (empty result)")
 
         # -----------------------------------------------------
-        # Dataset④ LogitScore
+        # Dataset3 LogitScore（パターン1：ラグのみ×ロジットスコア）
         # -----------------------------------------------------
-        n_results_max += 1
-        data_ts_logit = create_dataset_iv_logit_score(
+        data_ts_logit = create_dataset_logit_lag_only(
             data_ts_mixed=data_ts_mixed,
-            B_true=B_true,
             base_names=base_names,
             discrete_variable_names=disc_names,
-            labels=labels_mixed,
             lag=lag
         )
+
         df_edge_logit, labels_logit = run_block_bootstrap_lingam(
             data=data_ts_logit,
             block_size=config["BLOCK_SIZE"],
@@ -126,6 +177,7 @@ def run_single_simulation(sim_id: int, config: dict, sim_seed: int) -> Tuple[Lis
             results_all.append({"sim_type": "LogitScore", "type": "All", **evals["all"]})
         else:
             logging.warning(f"[Sim {sim_id}] LogitScore → LiNGAM failed (empty result)")
+
 
         # ステータス
         if len(results_all) == n_results_max:

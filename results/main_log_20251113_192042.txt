@@ -1,0 +1,25 @@
+2025-11-13 19:20:42,025 [INFO] 開始: 15 回シミュレーションを 8 並列で実行します
+2025-11-13 19:20:42,025 [INFO] 設定: {'N_SIMULATIONS': 15, 'N_SAMPLES': 1000, 'LAG': 1, 'N_VARS': 4, 'EDGE_PROB': 0.2, 'BLOCK_SIZE': 50, 'BOOTSTRAP_SAMPLES': 10, 'PROBABILITY_THRESHOLD': 0.65, 'SIMULATION_TIMEOUT': 300}
+2025-11-13 19:20:42,761 [INFO] 並列実行開始 (Workers=8, Timeout=300s)
+2025-11-13 19:21:07,953 [INFO] --- シミュレーション実行サマリ (処理済: 15 / 15) ---
+2025-11-13 19:21:07,953 [INFO]   [完了] 15 回 (タイムアウトなし)
+2025-11-13 19:21:07,954 [INFO]     - 成功 (全行): 0 回
+2025-11-13 19:21:07,954 [INFO]     - 部分成功: 15 回
+2025-11-13 19:21:07,954 [INFO]     - LiNGAM失敗: 0 回
+2025-11-13 19:21:07,955 [INFO]     - 内部エラー: 0 回
+2025-11-13 19:21:07,955 [INFO]   [失敗] 0 回
+2025-11-13 19:21:07,955 [INFO]     - タイムアウト: 0 回
+2025-11-13 19:21:07,955 [INFO]     - プールエラー: 0 回
+2025-11-13 19:21:07,956 [INFO] --- 合計収集結果 (総行数): 45 ---
+2025-11-13 19:21:07,972 [INFO] 平均スコアを保存: results\avg_scores_parallel_results_sim15_s1000_l1_v4_bs10_20251113_192042.csv
+2025-11-13 19:21:07,972 [INFO] 統計スコアを保存: results\stats_parallel_results_sim15_s1000_l1_v4_bs10_20251113_192042.csv
+2025-11-13 19:21:07,973 [INFO] Generating combined boxplot (grouped by metric)...
+2025-11-13 19:21:08,808 [INFO] メトリクス別 結合箱ひげ図を保存: results\boxplot_combined_by_metric_parallel_results_sim15_s1000_l1_v4_bs10_20251113_192042.png
+2025-11-13 19:21:08,835 [INFO] 有意差検定結果を保存: results\significance_mixed_logit.csv
+2025-11-13 19:21:09,712 [INFO] 
+      Metric  Mean(Mixed)  Mean(Logit)  MeanDiff(Logit-Mixed)         Better    t_pval  wilcoxon_pval
+0  PRECISION     0.607118     0.416950              -0.190167  mixed > logit  0.999097       0.996847
+1     RECALL     0.493148     0.462143              -0.031005  mixed > logit  0.768631       0.845186
+2   F1_SCORE     0.549744     0.463158              -0.086586  mixed > logit  0.987368       0.990388
+
+2025-11-13 19:21:11,426 [INFO] Precision / Recall / F1 の有意差検定を含む全処理が完了しました。

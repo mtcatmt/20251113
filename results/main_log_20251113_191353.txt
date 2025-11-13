@@ -1,0 +1,27 @@
+2025-11-13 19:13:53,577 [INFO] 開始: 2 回シミュレーションを 8 並列で実行します
+2025-11-13 19:13:53,578 [INFO] 設定: {'N_SIMULATIONS': 2, 'N_SAMPLES': 1000, 'LAG': 1, 'N_VARS': 4, 'EDGE_PROB': 0.2, 'BLOCK_SIZE': 50, 'BOOTSTRAP_SAMPLES': 10, 'PROBABILITY_THRESHOLD': 0.65, 'SIMULATION_TIMEOUT': 300}
+2025-11-13 19:13:54,220 [INFO] 並列実行開始 (Workers=8, Timeout=300s)
+2025-11-13 19:14:06,248 [INFO] --- シミュレーション実行サマリ (処理済: 2 / 2) ---
+2025-11-13 19:14:06,248 [INFO]   [完了] 2 回 (タイムアウトなし)
+2025-11-13 19:14:06,253 [INFO]     - 成功 (全行): 0 回
+2025-11-13 19:14:06,253 [INFO]     - 部分成功: 2 回
+2025-11-13 19:14:06,254 [INFO]     - LiNGAM失敗: 0 回
+2025-11-13 19:14:06,254 [INFO]     - 内部エラー: 0 回
+2025-11-13 19:14:06,254 [INFO]   [失敗] 0 回
+2025-11-13 19:14:06,255 [INFO]     - タイムアウト: 0 回
+2025-11-13 19:14:06,255 [INFO]     - プールエラー: 0 回
+2025-11-13 19:14:06,256 [INFO] --- 合計収集結果 (総行数): 6 ---
+2025-11-13 19:14:06,273 [INFO] 平均スコアを保存: results\avg_scores_parallel_results_sim2_s1000_l1_v4_bs10_20251113_191353.csv
+2025-11-13 19:14:06,274 [INFO] 統計スコアを保存: results\stats_parallel_results_sim2_s1000_l1_v4_bs10_20251113_191353.csv
+2025-11-13 19:14:06,274 [INFO] Generating combined boxplot (grouped by metric)...
+2025-11-13 19:14:06,988 [INFO] メトリクス別 結合箱ひげ図を保存: results\boxplot_combined_by_metric_parallel_results_sim2_s1000_l1_v4_bs10_20251113_191353.png
+2025-11-13 19:14:07,009 [WARNING] precision: データ不足 (2 ペア)
+2025-11-13 19:14:07,010 [WARNING] recall: データ不足 (2 ペア)
+2025-11-13 19:14:07,011 [WARNING] f1_score: データ不足 (2 ペア)
+2025-11-13 19:14:07,013 [INFO] 有意差検定結果を保存: results\significance_mixed_logit.csv
+2025-11-13 19:14:07,719 [INFO] 
+Empty DataFrame
+Columns: []
+Index: []
+
+2025-11-13 19:14:09,148 [INFO] Precision / Recall / F1 の有意差検定を含む全処理が完了しました。
