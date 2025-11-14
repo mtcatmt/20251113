@@ -199,6 +199,6 @@ if __name__ == "__main__":
     main()
 
 
-from config import SIMULATION_CONFIG
-generate_unified_sample_csv(SIMULATION_CONFIG, "sample_output")
+# from config import SIMULATION_CONFIG
+# generate_unified_sample_csv(SIMULATION_CONFIG, "sample_output")
 
